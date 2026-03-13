@@ -1,36 +1,68 @@
-# 局域网文档搜索引擎 (Doc Search Engine)
+# 文档搜索引擎 (Doc Search Engine)
 
-本项目是一个轻量级、高性能的局域网内文档搜索工具。它支持对局域网内目录中储存的批量 `.doc` 和 `.docx` 报告文件进行自动文本解析、中文分词索引，并提供一个类似 Google 搜索风格的前端界面供用户进行高速检索与无格式内容在线预览。
+本项目是一个轻量级、高性能的文档搜索工具。支持对多个目录中储存的批量 `.doc` 和 `.docx` 文件进行自动文本解析、中文分词索引，并提供类似 Google 搜索风格的前端界面供用户进行高速检索与无格式内容在线预览。
 
 ## 当前版本
-**v1.0.2** (指定 Node.js 运行环境: `v18.16.1`)
+**v1.0.3** · Node.js `v18.16.1`
 
-## 系统架构与开发规范文档
-系统的总体设计思路、核心技术栈、数据库表结构以及对外提供的 RESTful API 接口规范，详细记录于系统开发文档中：
-- **开发文档路径:** `docs/technical_framework.md` 
-*(请在进行任何架构调整、API修改或模块解耦重构前，务必优先参阅并更新此文档)*
+## 系统开发文档
+- **技术方案:** `docs/technical_framework.md` — 涵盖架构设计、数据库结构、API 规范等
+- 进行架构调整或 API 修改前，请优先参阅并同步更新上述文档
 
-## 后续开发指引 (For Assistant Developer)
-当你（AI 助手或后续开发者）接手此项目的继续开发时，请遵循以下核心原则：
+## 主要功能
+- 🔍 **全文搜索** — 基于 SQLite FTS5 + 结巴中文分词，毫秒级返回结果
+- 📄 **文档预览** — 弹窗展示纯文本内容，搜索关键词高亮显示
+- ⬇️ **原文下载** — 一键下载原始 .doc/.docx 文件
+- 📂 **多目录监控** — 支持同时监视多个文档目录（绝对/相对路径均可）
+- 🔄 **实时同步** — 自动检测文件新增、修改、重命名、删除并更新索引
+- 📋 **日志系统** — Winston 双轨日志（控制台 + 按日期滚动归档）
+- 🌐 **RESTful API** — 开放标准接口，支持外部程序调用
 
-1. **统一配置管理**: 所有系统级的魔术变量和环境配置，必须且只能写入 `config/app.config.json`，并在代码中通过 `config/index.js` 统一加载。
-2. **极简前端约定**: 前端页面基于纯净的 HTML / CSS / Vanilla JS 构建在 `public` 目录下。**如无用户明确指令，严禁**随意引入 Webpack、Vite、Vue、React 或 TailwindCSS 等重型前端工程化工具流。
-3. **保持模块解耦**: 增加新业务逻辑时，严格遵守 `routes/` (路由层) -> `controllers/` (请求处理与参数校验层) -> `services/` (核心业务与 FTS5 计算) -> `models/` (底层 SQLite 操作) 的分层结构。
-4. **数据库设计不变原则**:  `documents` 与 `documents_fts` 结构采用了预先调用 `nodejieba` 分词后再存入 SQLite FTS5 的高性能策略。若需要调整检索算法，需谨慎测试中文高亮 `snippet` 的截取位置是否受影响。
-5. **增量文件同步**: 系统的热同步依赖于 `chokidar`。如果后期需要增加其他文件格式 (如 `.pdf`, `.xls`) 的解析，请编写独立的解析器放入 `src/parser/` 中并在 `src/parser/index.js` 暴露。
-
-## 快速安装与运行
+## 快速开始
 
 ```bash
-# 1. 安装核心依赖
+# 1. 安装依赖
 npm install
 
-# 2. 根据需要修改 JSON 配置文件
-# 位置: config/app.config.json
-# 修改端口或被扫描的存放文档的根目录...
+# 2. 配置监控目录（可选）
+# 编辑 config/app.config.json，修改 docDirectories 数组
+# 支持相对路径和绝对路径混合使用
 
-# 3. 启动后台解析进程与搜索服务
+# 3. 启动服务
 npm run app
 ```
 
-访问 `http://localhost:3004` (默认配置) 即可使用系统。
+访问 `http://localhost:3004` 即可使用。
+
+## 配置说明
+
+配置文件位于 `config/app.config.json`：
+
+```json
+{
+  "port": 3004,
+  "dbRelativePath": "db/doc_search.db",
+  "docDirectories": [
+    "../data",
+    "D:\\reports\\archive"
+  ],
+  "supportedExtensions": [".doc", ".docx"],
+  "defaultPageLimit": 10
+}
+```
+
+| 配置项 | 说明 |
+|--------|------|
+| `port` | 服务监听端口 |
+| `dbRelativePath` | SQLite 数据库文件路径（相对项目根目录） |
+| `docDirectories` | 被监控的文档目录列表（支持绝对/相对路径） |
+| `supportedExtensions` | 支持解析的文件扩展名 |
+| `defaultPageLimit` | 搜索结果默认每页条数 |
+
+## 后续开发指引
+
+1. **统一配置管理**: 所有配置写入 `config/app.config.json`，通过 `config/index.js` 加载。
+2. **极简前端约定**: 纯 HTML / CSS / Vanilla JS，禁止引入重型框架。
+3. **保持模块解耦**: 遵守 `routes/` → `controllers/` → `services/` → `models/` 分层结构。
+4. **日志规范**: 使用 `src/utils/logger.js` 替代 `console.log`，支持分级输出。
+5. **新增文件格式**: 在 `src/parser/` 中编写独立解析器并在入口文件注册即可。
