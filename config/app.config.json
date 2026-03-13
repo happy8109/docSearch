@@ -1,0 +1,7 @@
+{
+  "port": 3004,
+  "dbRelativePath": "db/doc_search.db",
+  "docRelativeDirectory": "../data",
+  "supportedExtensions": [".doc", ".docx"],
+  "defaultPageLimit": 10
+}

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>局域网文档搜索</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Home Page -->
+  <div id="home-view" class="view">
+    <div class="center-box">
+      <div class="logo">文档搜索</div>
+      <form id="search-form" class="search-box">
+        <svg class="search-icon" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+        <input type="text" id="search-input-home" autocomplete="off" autofocus>
+      </form>
+      <div class="buttons">
+        <button id="btn-search-home">检索文档</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Results Page -->
+  <div id="results-view" class="view hidden">
+    <header class="top-bar">
+      <div class="logo-small" id="logo-small">文档搜索</div>
+      <form id="search-form-top" class="search-box-top">
+        <input type="text" id="search-input-top" autocomplete="off">
+        <button type="submit" class="search-btn-top">
+          <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+        </button>
+      </form>
+    </header>
+    
+    <div class="result-stats" id="result-stats"></div>
+    
+    <main class="results-container" id="results-container">
+      <!-- Results injected here by JS -->
+    </main>
+
+    <div class="pagination" id="pagination">
+      <!-- Pagination injected here -->
+    </div>
+  </div>
+
+  <!-- Document Preview Modal -->
+  <div id="doc-modal" class="modal hidden">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">...</h2>
+        <span class="close-btn" id="modal-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <pre id="modal-text">正在加载...</pre>
+      </div>
+      <div class="modal-footer">
+        <a id="modal-download-btn" class="download-btn" href="#" target="_blank">下载原文件</a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="system-footer" id="system-footer">
+    <!-- Status loaded dynamically -->
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
