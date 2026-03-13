@@ -20,6 +20,9 @@ const DOM = {
   modalText: document.getElementById('modal-text'),
   modalDownloadBtn: document.getElementById('modal-download-btn'),
   
+  clearBtnHome: document.getElementById('clear-btn-home'),
+  clearBtnTop: document.getElementById('clear-btn-top'),
+  
   systemFooter: document.getElementById('system-footer')
 };
 
@@ -57,13 +60,33 @@ function bindEvents() {
 
   DOM.modalClose.addEventListener('click', closeModal);
   DOM.modalOverlay.addEventListener('click', closeModal);
+
+  // Clear buttons
+  DOM.clearBtnHome.addEventListener('click', () => {
+    DOM.searchInputHome.value = '';
+    DOM.clearBtnHome.classList.add('hidden');
+    DOM.searchInputHome.focus();
+  });
+  DOM.clearBtnTop.addEventListener('click', () => {
+    DOM.searchInputTop.value = '';
+    DOM.clearBtnTop.classList.add('hidden');
+    DOM.searchInputTop.focus();
+  });
+
+  // Toggle clear button visibility on input
+  DOM.searchInputHome.addEventListener('input', () => {
+    DOM.clearBtnHome.classList.toggle('hidden', !DOM.searchInputHome.value);
+  });
+  DOM.searchInputTop.addEventListener('input', () => {
+    DOM.clearBtnTop.classList.toggle('hidden', !DOM.searchInputTop.value);
+  });
 }
 
 function showHome() {
   DOM.homeView.classList.remove('hidden');
   DOM.resultsView.classList.add('hidden');
   DOM.searchInputHome.value = '';
-  document.title = '局域网文档搜索';
+  document.title = '文档搜索引擎';
 }
 
 function showResults() {
@@ -93,12 +116,13 @@ function performSearch(query, page) {
   currentQuery = query;
   currentPage = page;
   DOM.searchInputTop.value = query;
+  DOM.clearBtnTop.classList.toggle('hidden', !query);
   fetchResults(query, page);
 }
 
 async function fetchResults(query, page) {
   showResults();
-  document.title = `${query} - 文档搜索`;
+  document.title = `${query} - 文档搜索引擎`;
   DOM.resultsContainer.innerHTML = '<p style="color:#70757a; font-size:14px;">正在全库高速检索，请稍候...</p>';
   DOM.resultStats.textContent = '';
   DOM.pagination.innerHTML = '';
@@ -226,8 +250,8 @@ async function loadSystemStatus() {
     if (res.ok) {
       const dirs = Array.isArray(data.docDirectories) ? data.docDirectories.join(', ') : (data.docDirectory || '-');
       DOM.systemFooter.innerHTML = `
-        系统守护进程状态: 运行中 | 当前索引文档数: ${data.documentCount} | 运行时间: ${Math.floor(data.uptime / 60)} 分钟 | 
-        <span style="cursor:help" title="热替换监控路径: ${dirs}">后台文件监听系统正常 (热替换生效)</span> | SQLite FTS5 核心驱动
+        Doc Search v${data.version || '-'} | 索引文档数: ${data.documentCount} | 运行时间: ${Math.floor(data.uptime / 60)} 分钟 | 
+        <span style="cursor:help" title="热替换监控路径: ${dirs}">文件监听正常</span> | SQLite FTS5
       `;
     }
   } catch (err) {

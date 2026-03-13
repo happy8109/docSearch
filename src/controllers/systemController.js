@@ -1,5 +1,6 @@
 const dbModule = require('../models/db');
 const config = require('../../config');
+const pkg = require('../../package.json');
 
 async function getSystemStatus(req, res, next) {
   try {
@@ -8,6 +9,7 @@ async function getSystemStatus(req, res, next) {
     
     res.json({
       status: 'running',
+      version: pkg.version,
       documentCount: countRow ? countRow.count : 0,
       docDirectories: config.docDirectories,
       dbPath: config.dbPath,
