@@ -37,29 +37,29 @@
     
     <div class="result-stats" id="result-stats"></div>
     
-    <main class="results-container" id="results-container">
-      <!-- Results injected here by JS -->
-    </main>
+    <div class="search-layout">
+      <div class="search-results-column">
+        <main class="results-container" id="results-container">
+          <!-- Results injected here by JS -->
+        </main>
 
-    <div class="pagination" id="pagination">
-      <!-- Pagination injected here -->
-    </div>
-  </div>
+        <div class="pagination" id="pagination">
+          <!-- Pagination injected here -->
+        </div>
+      </div>
 
-  <!-- Document Preview Modal -->
-  <div id="doc-modal" class="modal hidden">
-    <div class="modal-overlay" id="modal-overlay"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modal-title">...</h2>
-        <span class="close-btn" id="modal-close">&times;</span>
-      </div>
-      <div class="modal-body">
-        <pre id="modal-text">正在加载...</pre>
-      </div>
-      <div class="modal-footer">
-        <a id="modal-download-btn" class="download-btn" href="#" target="_blank">下载原文件</a>
-      </div>
+      <aside class="preview-panel hidden" id="preview-panel">
+        <div class="preview-header">
+          <h2 id="preview-title">文档预览</h2>
+          <span class="close-preview" id="close-preview">&times;</span>
+        </div>
+        <div class="preview-body">
+          <pre id="preview-text">请在左侧点击文档查看预览</pre>
+        </div>
+        <div class="preview-footer">
+          <a id="preview-download-btn" class="download-btn" href="#" target="_blank">下载原文件</a>
+        </div>
+      </aside>
     </div>
   </div>
 

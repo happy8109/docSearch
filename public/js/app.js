@@ -13,12 +13,11 @@ const DOM = {
   resultsContainer: document.getElementById('results-container'),
   pagination: document.getElementById('pagination'),
 
-  modal: document.getElementById('doc-modal'),
-  modalOverlay: document.getElementById('modal-overlay'),
-  modalClose: document.getElementById('modal-close'),
-  modalTitle: document.getElementById('modal-title'),
-  modalText: document.getElementById('modal-text'),
-  modalDownloadBtn: document.getElementById('modal-download-btn'),
+  previewPanel: document.getElementById('preview-panel'),
+  previewClose: document.getElementById('close-preview'),
+  previewTitle: document.getElementById('preview-title'),
+  previewText: document.getElementById('preview-text'),
+  previewDownloadBtn: document.getElementById('preview-download-btn'),
 
   clearBtnHome: document.getElementById('clear-btn-home'),
   clearBtnTop: document.getElementById('clear-btn-top'),
@@ -29,6 +28,7 @@ const DOM = {
 let currentQuery = '';
 let currentPage = 1;
 const LIMIT = 10;
+let lastSelectedDocId = null;
 
 function init() {
   bindEvents();
@@ -58,8 +58,9 @@ function bindEvents() {
 
   window.addEventListener('popstate', checkUrlParams);
 
-  DOM.modalClose.addEventListener('click', closeModal);
-  DOM.modalOverlay.addEventListener('click', closeModal);
+  if (DOM.previewClose) {
+    DOM.previewClose.addEventListener('click', closePreview);
+  }
 
   // Clear buttons
   DOM.clearBtnHome.addEventListener('click', () => {
@@ -123,6 +124,7 @@ function performSearch(query, page) {
 
 async function fetchResults(query, page) {
   showResults();
+  closePreview();
   document.title = query + ' - 文档搜索引擎';
   DOM.resultsContainer.innerHTML = '<p style="color:#70757a; font-size:14px;">正在全库高速检索，请稍候...</p>';
   DOM.resultStats.textContent = '';
@@ -146,7 +148,7 @@ function renderResults(items) {
   if (!items || items.length === 0) {
     DOM.resultsContainer.innerHTML =
       '<div style="margin-top:30px">' +
-      '<p>找不到和您查询的 "<b>' + escapeHtml(currentQuery) + '</b>" 相符的文档。</p>' +
+      '<p>找不到和您查询的 "<b>' + escapeHtml(currentQuery) + '</b>" 相符显示的文档。</p>' +
       '<p style="margin-top:20px">建议：</p>' +
       '<ul style="margin-top:5px; padding-left:20px; color:#3c4043; line-height: 1.6">' +
       '<li>请检查输入字词有无错误。</li>' +
@@ -161,8 +163,8 @@ function renderResults(items) {
   for (var i = 0; i < items.length; i++) {
     var item = items[i];
     var safeName = escapeHtml(item.filename).replace(/'/g, "\\'");
-    html += '<div class="result-item">';
-    html += '<div class="result-title" onclick="openDocumentModal(\'' + item.id + '\', \'' + safeName + '\')">' + escapeHtml(item.filename) + '</div>';
+    html += '<div class="result-item" id="doc-' + item.id + '" onclick="openPreview(\'' + item.id + '\', \'' + safeName + '\')">';
+    html += '<div class="result-title">' + escapeHtml(item.filename) + '</div>';
     html += '<div class="result-snippet">' + (item.snippet || '该文档未提取到明显对应的文字片段') + '</div>';
     html += '<div class="result-path">' + escapeHtml(item.absolutePath || item.filepath) + '</div>';
     html += '</div>';
@@ -199,23 +201,36 @@ function renderPagination(total, currentPage) {
   DOM.pagination.innerHTML = html;
 }
 
-async function openDocumentModal(id, filename) {
-  DOM.modal.classList.remove('hidden');
-  DOM.modalTitle.textContent = filename;
-  DOM.modalText.innerHTML = '<span style="color:#70757a">正在加载大文件纯文本抽取版，请稍候...</span>';
-  DOM.modalDownloadBtn.href = '/api/document/' + id + '/download';
+async function openPreview(id, filename) {
+  // Update highlighting in list
+  if (lastSelectedDocId) {
+    const oldItem = document.getElementById('doc-' + lastSelectedDocId);
+    if (oldItem) oldItem.classList.remove('active');
+  }
+  const newItem = document.getElementById('doc-' + id);
+  if (newItem) newItem.classList.add('active');
+  lastSelectedDocId = id;
+
+  // Show panel and load content
+  DOM.previewPanel.classList.remove('hidden');
+  DOM.previewTitle.textContent = filename;
+  DOM.previewText.innerHTML = '<span style="color:#70757a">正在加载预览内容...</span>';
+  DOM.previewDownloadBtn.href = '/api/document/' + id + '/download';
+
+  // Scroll to top of preview body
+  DOM.previewPanel.querySelector('.preview-body').scrollTop = 0;
 
   try {
     var res = await fetch('/api/document/' + id + '/text');
     var data = await res.json();
     if (res.ok) {
       var content = data.content || '该文档无可用纯文本内容或抽取失败（请下载原文件查看）';
-      DOM.modalText.innerHTML = highlightText(content, currentQuery);
+      DOM.previewText.innerHTML = highlightText(content, currentQuery);
     } else {
-      DOM.modalText.textContent = '加载失败: ' + (data.error || '未知错误');
+      DOM.previewText.textContent = '加载失败: ' + (data.error || '未知错误');
     }
   } catch (err) {
-    DOM.modalText.textContent = '网络错误: ' + err.message;
+    DOM.previewText.textContent = '网络错误: ' + err.message;
   }
 }
 
@@ -235,9 +250,13 @@ function highlightText(text, query) {
   return safeText;
 }
 
-function closeModal() {
-  DOM.modal.classList.add('hidden');
-  DOM.modalText.textContent = '';
+function closePreview() {
+  if (DOM.previewPanel) DOM.previewPanel.classList.add('hidden');
+  if (lastSelectedDocId) {
+    const item = document.getElementById('doc-' + lastSelectedDocId);
+    if (item) item.classList.remove('active');
+  }
+  lastSelectedDocId = null;
 }
 
 async function loadSystemStatus() {
