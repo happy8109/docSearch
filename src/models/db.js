@@ -1,8 +1,9 @@
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
-const config = require('../../config');
 const fs = require('fs');
 const path = require('path');
+const logger = require('../utils/logger');
+const config = require('../../config');
 
 let dbInstance = null;
 
@@ -45,7 +46,7 @@ async function init() {
     );
   `);
 
-  console.log('[SQLite] Connected to database and verified schemas.');
+  logger.debug('[SQLite] Connected to database and verified schemas.');
   dbInstance = db;
   return dbInstance;
 }

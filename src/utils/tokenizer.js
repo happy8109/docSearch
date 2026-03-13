@@ -1,4 +1,7 @@
-const nodejieba = require('nodejieba');
+const { Jieba } = require('@node-rs/jieba');
+
+// Initialize with default dictionaries
+const jieba = new Jieba();
 
 /**
  * Tokenize string for SQLite FTS5 matching.
@@ -6,8 +9,8 @@ const nodejieba = require('nodejieba');
  */
 function tokenize(text) {
   if (!text) return '';
-  // nodejieba.cutForSearch returns an array of segments
-  const words = nodejieba.cutForSearch(text);
+  // cutForSearch returns an array of segments
+  const words = jieba.cutForSearch(text);
   return words.join(' ');
 }
 

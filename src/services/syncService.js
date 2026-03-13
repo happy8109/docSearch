@@ -5,6 +5,7 @@ const dbModule = require('../models/db');
 const { extractText } = require('../parser');
 const { tokenize } = require('../utils/tokenizer');
 const config = require('../../config');
+const logger = require('../utils/logger');
 
 let watcher = null;
 
@@ -26,7 +27,7 @@ async function processFile(filePath) {
       return;
     }
 
-    console.log(`[Sync] Parsing & Indexing: ${relativePath}`);
+    logger.debug(`[Sync] Parsing & Indexing: ${relativePath}`);
     const rawContent = await extractText(filePath);
     const tokenizedContent = tokenize(rawContent);
     const tokenizedTitle = tokenize(filename);
@@ -55,11 +56,11 @@ async function processFile(filePath) {
     }
     
     await db.exec('COMMIT');
-    console.log(`[Sync] Finished Indexing: ${relativePath}`);
+    logger.info(`[Sync] Finished Indexing: ${relativePath}`);
 
   } catch (error) {
     await db.exec('ROLLBACK').catch(() => {});
-    console.error(`[Sync] Error indexing ${relativePath}:`, error.message);
+    logger.error(`[Sync] Error indexing ${relativePath}:`, error);
   }
 }
 
@@ -77,17 +78,17 @@ async function removeFile(filePath) {
       await db.run('DELETE FROM documents WHERE id = ?', [existing.id]);
       await db.run('DELETE FROM documents_fts WHERE doc_id = ?', [existing.id]);
       await db.exec('COMMIT');
-      console.log(`[Sync] Removed from index: ${relativePath}`);
+      logger.info(`[Sync] Removed from index: ${relativePath}`);
     }
   } catch (error) {
     await db.exec('ROLLBACK').catch(() => {});
-    console.error(`[Sync] Error removing ${relativePath}:`, error.message);
+    logger.error(`[Sync] Error removing ${relativePath}:`, error);
   }
 }
 
 function start(dirPath) {
   if (watcher) return;
-  console.log(`[Sync] Starting watcher on directory: ${dirPath}`);
+  logger.info(`[Sync] Starting watcher on directory: ${dirPath}`);
   
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -106,7 +107,7 @@ function start(dirPath) {
     .on('add', (filePath) => processFile(filePath))
     .on('change', (filePath) => processFile(filePath))
     .on('unlink', (filePath) => removeFile(filePath))
-    .on('error', (error) => console.error(`[Sync] Watcher error:`, error));
+    .on('error', (error) => logger.error(`[Sync] Watcher error:`, error));
 }
 
 module.exports = { start };

@@ -1,4 +1,5 @@
 const WordExtractor = require("word-extractor");
+const logger = require('../utils/logger');
 
 /**
  * Extract text from old .doc files using pure Javascript word-extractor
@@ -9,7 +10,7 @@ async function extractDoc(filePath) {
     const extracted = await extractor.extract(filePath);
     return extracted.getBody();
   } catch (error) {
-    console.error(`[Parser - DOC] Error extracting ${filePath}`, error.message);
+    logger.error(`[Parser - DOC] Error extracting ${filePath}`, error);
     throw error;
   }
 }
