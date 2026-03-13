@@ -33,8 +33,17 @@ async function downloadDocument(req, res, next) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    const absolutePath = path.join(config.docDirectory, doc.filepath);
-    if (!fs.existsSync(absolutePath)) {
+    // Search through all configured directories for the physical file
+    let absolutePath = null;
+    for (const dir of config.docDirectories) {
+      const candidate = path.join(dir, doc.filepath);
+      if (fs.existsSync(candidate)) {
+        absolutePath = candidate;
+        break;
+      }
+    }
+
+    if (!absolutePath) {
       return res.status(404).json({ error: 'Physical file not found on server' });
     }
 

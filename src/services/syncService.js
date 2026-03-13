@@ -8,13 +8,37 @@ const config = require('../../config');
 const logger = require('../utils/logger');
 
 let watcher = null;
+const syncQueue = [];
+let isProcessingQueue = false;
+
+async function addToQueue(filePath, action) {
+  syncQueue.push({ filePath, action });
+  processQueue();
+}
+
+async function processQueue() {
+  if (isProcessingQueue || syncQueue.length === 0) return;
+  isProcessingQueue = true;
+
+  while (syncQueue.length > 0) {
+    const { filePath, action } = syncQueue.shift();
+    if (action === 'add' || action === 'change') {
+      await processFile(filePath);
+    } else if (action === 'unlink') {
+      await removeFile(filePath);
+    }
+  }
+
+  isProcessingQueue = false;
+}
 
 async function processFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   if (!config.supportedExtensions.includes(ext)) return;
 
   const db = await dbModule.getDb();
-  const relativePath = path.relative(config.docDirectory, filePath);
+  const baseDir = findBaseDir(filePath);
+  const relativePath = baseDir ? path.relative(baseDir, filePath) : path.basename(filePath);
   const filename = path.basename(filePath);
   
   try {
@@ -39,8 +63,9 @@ async function processFile(filePath) {
         'UPDATE documents SET mtime = ?, raw_content = ?, filename = ? WHERE id = ?',
         [mtime, rawContent, filename, existing.id]
       );
+      await db.run('DELETE FROM documents_fts WHERE doc_id = ?', [existing.id]);
       await db.run(
-        'UPDATE documents_fts SET title = ?, content = ? WHERE doc_id = ?',
+        'INSERT INTO documents_fts (title, content, doc_id) VALUES (?, ?, ?)',
         [tokenizedTitle, tokenizedContent, existing.id]
       );
     } else {
@@ -69,7 +94,8 @@ async function removeFile(filePath) {
   if (!config.supportedExtensions.includes(ext)) return;
 
   const db = await dbModule.getDb();
-  const relativePath = path.relative(config.docDirectory, filePath);
+  const baseDir = findBaseDir(filePath);
+  const relativePath = baseDir ? path.relative(baseDir, filePath) : path.basename(filePath);
 
   try {
     const existing = await db.get('SELECT id FROM documents WHERE filepath = ?', [relativePath]);
@@ -86,16 +112,34 @@ async function removeFile(filePath) {
   }
 }
 
-function start(dirPath) {
-  if (watcher) return;
-  logger.info(`[Sync] Starting watcher on directory: ${dirPath}`);
-  
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
+// Find which base directory a file belongs to
+function findBaseDir(filePath) {
+  const normalizedFile = path.normalize(filePath).toLowerCase();
+  for (const dir of config.docDirectories) {
+    const normalizedDir = path.normalize(dir).toLowerCase();
+    if (normalizedFile.startsWith(normalizedDir)) {
+      return dir;
+    }
   }
+  return config.docDirectories[0];
+}
 
-  watcher = chokidar.watch(dirPath, {
-    ignored: /(^|[\/\\])\../,
+function start(directories) {
+  if (watcher) return;
+
+  // Ensure all directories exist
+  const dirs = Array.isArray(directories) ? directories : [directories];
+  dirs.forEach(dirPath => {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  });
+
+  logger.info(`[Sync] Starting watcher on ${dirs.length} director${dirs.length > 1 ? 'ies' : 'y'}:`);
+  dirs.forEach(d => logger.info(`  -> ${d}`));
+
+  watcher = chokidar.watch(dirs, {
+    ignored: /(^|[\/\\])[\.~]/, // Ignore hidden files and MS Word temp lock files (~$)
     persistent: true,
     awaitWriteFinish: {
       stabilityThreshold: 2000,
@@ -104,9 +148,9 @@ function start(dirPath) {
   });
 
   watcher
-    .on('add', (filePath) => processFile(filePath))
-    .on('change', (filePath) => processFile(filePath))
-    .on('unlink', (filePath) => removeFile(filePath))
+    .on('add', (filePath) => addToQueue(filePath, 'add'))
+    .on('change', (filePath) => addToQueue(filePath, 'change'))
+    .on('unlink', (filePath) => addToQueue(filePath, 'unlink'))
     .on('error', (error) => logger.error(`[Sync] Watcher error:`, error));
 }
 

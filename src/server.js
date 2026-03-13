@@ -12,13 +12,13 @@ async function startServer() {
     logger.info('Database initialized.');
 
     // 2. 启动基于 chokidar 的文件监听和扫描服务
-    syncService.start(config.docDirectory);
+    syncService.start(config.docDirectories);
     logger.info('Document sync service started.');
 
     // 3. 启动 HTTP 服务
     app.listen(config.port, () => {
       logger.info(`Doc Search Engine running on http://localhost:${config.port}`);
-      logger.info(`Watching directory : ${config.docDirectory}`);
+      logger.info(`Watching ${config.docDirectories.length} director${config.docDirectories.length > 1 ? 'ies' : 'y'}`);
       logger.info(`Database location : ${config.dbPath}`);
     });
   } catch (err) {

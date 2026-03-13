@@ -9,7 +9,7 @@ async function getSystemStatus(req, res, next) {
     res.json({
       status: 'running',
       documentCount: countRow ? countRow.count : 0,
-      docDirectory: config.docDirectory,
+      docDirectories: config.docDirectories,
       dbPath: config.dbPath,
       uptime: process.uptime()
     });

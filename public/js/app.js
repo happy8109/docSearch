@@ -177,20 +177,41 @@ function renderPagination(total, currentPage) {
 async function openDocumentModal(id, filename) {
   DOM.modal.classList.remove('hidden');
   DOM.modalTitle.textContent = filename;
-  DOM.modalText.textContent = '正在加载大文件纯文本抽取版，请稍候...';
+  DOM.modalText.innerHTML = '<span style="color:#70757a">正在加载大文件纯文本抽取版，请稍候...</span>';
   DOM.modalDownloadBtn.href = `/api/document/${id}/download`;
 
   try {
     const res = await fetch(`/api/document/${id}/text`);
     const data = await res.json();
     if (res.ok) {
-      DOM.modalText.textContent = data.content || '该文档无可用纯文本内容或抽取失败（请下载原文件查看）';
+      const content = data.content || '该文档无可用纯文本内容或抽取失败（请下载原文件查看）';
+      DOM.modalText.innerHTML = highlightText(content, currentQuery);
     } else {
       DOM.modalText.textContent = '加载失败: ' + (data.error || '未知错误');
     }
   } catch (err) {
     DOM.modalText.textContent = '网络错误: ' + err.message;
   }
+}
+
+function highlightText(text, query) {
+  if (!query || !query.trim()) return escapeHtml(text);
+  
+  // Split query into individual keywords (by spaces)
+  const keywords = query.trim().split(/\s+/).filter(k => k.length > 0);
+  if (keywords.length === 0) return escapeHtml(text);
+  
+  // Escape HTML first to prevent XSS
+  let safeText = escapeHtml(text);
+  
+  // Build a combined regex for all keywords (case insensitive)
+  const pattern = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  
+  // Wrap matches in highlight <mark> tags
+  safeText = safeText.replace(regex, '<mark class="preview-highlight">$1</mark>');
+  
+  return safeText;
 }
 
 function closeModal() {
@@ -203,9 +224,10 @@ async function loadSystemStatus() {
     const res = await fetch('/api/system/status');
     const data = await res.json();
     if (res.ok) {
+      const dirs = Array.isArray(data.docDirectories) ? data.docDirectories.join(', ') : (data.docDirectory || '-');
       DOM.systemFooter.innerHTML = `
         系统守护进程状态: 运行中 | 当前索引文档数: ${data.documentCount} | 运行时间: ${Math.floor(data.uptime / 60)} 分钟 | 
-        <span style="cursor:help" title="热替换监控路径: ${data.docDirectory}">后台文件监听系统正常 (热替换生效)</span> | SQLite FTS5 核心驱动
+        <span style="cursor:help" title="热替换监控路径: ${dirs}">后台文件监听系统正常 (热替换生效)</span> | SQLite FTS5 核心驱动
       `;
     }
   } catch (err) {
