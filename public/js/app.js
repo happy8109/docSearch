@@ -13,6 +13,7 @@ const DOM = {
   resultsContainer: document.getElementById('results-container'),
   pagination: document.getElementById('pagination'),
   timeFilter: document.getElementById('time-filter'),
+  sortFilter: document.getElementById('sort-filter'),
 
   previewPanel: document.getElementById('preview-panel'),
   previewClose: document.getElementById('close-preview'),
@@ -29,6 +30,7 @@ const DOM = {
 let currentQuery = '';
 let currentPage = 1;
 let currentPeriod = 'all';
+let currentSort = 'desc';
 const LIMIT = 10;
 let lastSelectedDocId = null;
 
@@ -74,6 +76,17 @@ function bindEvents() {
     updateFilterButtons();
     performSearch(currentQuery, 1);
   });
+  
+  // Sort filter buttons
+  DOM.sortFilter.addEventListener('click', function (e) {
+    var btn = e.target.closest('.sort-btn');
+    if (!btn) return;
+    var sort = btn.getAttribute('data-sort');
+    if (sort === currentSort) return;
+    currentSort = sort;
+    updateFilterButtons();
+    performSearch(currentQuery, 1);
+  });
 
   // Clear buttons
   DOM.clearBtnHome.addEventListener('click', function () {
@@ -97,12 +110,23 @@ function bindEvents() {
 }
 
 function updateFilterButtons() {
-  var buttons = DOM.timeFilter.querySelectorAll('.filter-btn');
-  for (var i = 0; i < buttons.length; i++) {
-    if (buttons[i].getAttribute('data-period') === currentPeriod) {
-      buttons[i].classList.add('active');
+  // Period buttons
+  var pButtons = DOM.timeFilter.querySelectorAll('.filter-btn');
+  for (var i = 0; i < pButtons.length; i++) {
+    if (pButtons[i].getAttribute('data-period') === currentPeriod) {
+      pButtons[i].classList.add('active');
     } else {
-      buttons[i].classList.remove('active');
+      pButtons[i].classList.remove('active');
+    }
+  }
+  
+  // Sort buttons
+  var sButtons = DOM.sortFilter.querySelectorAll('.sort-btn');
+  for (var j = 0; j < sButtons.length; j++) {
+    if (sButtons[j].getAttribute('data-sort') === currentSort) {
+      sButtons[j].classList.add('active');
+    } else {
+      sButtons[j].classList.remove('active');
     }
   }
 }
@@ -131,6 +155,7 @@ function checkUrlParams() {
     currentQuery = q;
     currentPage = page;
     currentPeriod = period;
+    currentSort = urlParams.get('sort') || 'desc';
     updateFilterButtons();
     fetchResults(q, page);
   } else {
@@ -144,7 +169,10 @@ function performSearch(query, page) {
   if (currentPeriod !== 'all') {
     url += '&period=' + currentPeriod;
   }
-  window.history.pushState({ query: query, page: page, period: currentPeriod }, '', url);
+  if (currentSort !== 'desc') {
+    url += '&sort=' + currentSort;
+  }
+  window.history.pushState({ query: query, page: page, period: currentPeriod, sort: currentSort }, '', url);
   currentQuery = query;
   currentPage = page;
   DOM.searchInputTop.value = query;
@@ -165,6 +193,9 @@ async function fetchResults(query, page) {
     var apiUrl = '/api/search?q=' + encodeURIComponent(query) + '&page=' + page + '&limit=' + LIMIT;
     if (currentPeriod !== 'all') {
       apiUrl += '&period=' + currentPeriod;
+    }
+    if (currentSort !== 'desc') {
+      apiUrl += '&sort=' + currentSort;
     }
     var res = await fetch(apiUrl);
     var data = await res.json();

@@ -4,7 +4,7 @@ const config = require('../../config');
 const path = require('path');
 const fs = require('fs');
 
-async function searchDocuments(query, page = 1, limit = 10, period = 'all') {
+async function searchDocuments(query, page = 1, limit = 10, period = 'all', sort = 'desc') {
   const db = await dbModule.getDb();
   
   const tokenizedQuery = tokenize(query);
@@ -30,7 +30,8 @@ async function searchDocuments(query, page = 1, limit = 10, period = 'all') {
   `, [matchWords, ...timeParam]);
   const total = countRow ? countRow.count : 0;
 
-  // Retrieve matched documents sorted by modification time (newest first)
+  // Retrieve matched documents sorted by modification time
+  const orderDir = sort === 'asc' ? 'ASC' : 'DESC';
   const rows = await db.all(`
     SELECT 
       fts.doc_id as id,
@@ -41,7 +42,7 @@ async function searchDocuments(query, page = 1, limit = 10, period = 'all') {
     FROM documents_fts fts
     JOIN documents d ON fts.doc_id = d.id
     WHERE documents_fts MATCH ?${timeCondition}
-    ORDER BY d.mtime DESC
+    ORDER BY d.mtime ${orderDir}
     LIMIT ? OFFSET ?
   `, [matchWords, ...timeParam, limit, offset]);
 

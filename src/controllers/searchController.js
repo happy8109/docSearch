@@ -12,7 +12,8 @@ async function search(req, res, next) {
     }
 
     const period = req.query.period || 'all';
-    const result = await searchService.searchDocuments(q, page, limit, period);
+    const sort = req.query.sort || 'desc';
+    const result = await searchService.searchDocuments(q, page, limit, period, sort);
     res.json(result);
   } catch (error) {
     next(error);

@@ -1,6 +1,6 @@
 {
   "name": "doc-search",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "文档搜索引擎",
   "main": "src/server.js",
   "engines": {
