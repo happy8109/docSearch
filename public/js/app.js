@@ -12,6 +12,7 @@ const DOM = {
   resultStats: document.getElementById('result-stats'),
   resultsContainer: document.getElementById('results-container'),
   pagination: document.getElementById('pagination'),
+  timeFilter: document.getElementById('time-filter'),
 
   previewPanel: document.getElementById('preview-panel'),
   previewClose: document.getElementById('close-preview'),
@@ -27,6 +28,7 @@ const DOM = {
 
 let currentQuery = '';
 let currentPage = 1;
+let currentPeriod = 'all';
 const LIMIT = 10;
 let lastSelectedDocId = null;
 
@@ -37,21 +39,21 @@ function init() {
 }
 
 function bindEvents() {
-  DOM.searchFormHome.addEventListener('submit', (e) => {
+  DOM.searchFormHome.addEventListener('submit', function (e) {
     e.preventDefault();
     performSearch(DOM.searchInputHome.value, 1);
   });
 
-  DOM.btnSearchHome.addEventListener('click', () => {
+  DOM.btnSearchHome.addEventListener('click', function () {
     performSearch(DOM.searchInputHome.value, 1);
   });
 
-  DOM.searchFormTop.addEventListener('submit', (e) => {
+  DOM.searchFormTop.addEventListener('submit', function (e) {
     e.preventDefault();
     performSearch(DOM.searchInputTop.value, 1);
   });
 
-  DOM.logoSmall.addEventListener('click', () => {
+  DOM.logoSmall.addEventListener('click', function () {
     window.history.pushState({}, '', '/');
     showHome();
   });
@@ -62,25 +64,47 @@ function bindEvents() {
     DOM.previewClose.addEventListener('click', closePreview);
   }
 
+  // Time filter buttons
+  DOM.timeFilter.addEventListener('click', function (e) {
+    var btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    var period = btn.getAttribute('data-period');
+    if (period === currentPeriod) return;
+    currentPeriod = period;
+    updateFilterButtons();
+    performSearch(currentQuery, 1);
+  });
+
   // Clear buttons
-  DOM.clearBtnHome.addEventListener('click', () => {
+  DOM.clearBtnHome.addEventListener('click', function () {
     DOM.searchInputHome.value = '';
     DOM.clearBtnHome.classList.add('hidden');
     DOM.searchInputHome.focus();
   });
-  DOM.clearBtnTop.addEventListener('click', () => {
+  DOM.clearBtnTop.addEventListener('click', function () {
     DOM.searchInputTop.value = '';
     DOM.clearBtnTop.classList.add('hidden');
     DOM.searchInputTop.focus();
   });
 
   // Toggle clear button visibility on input
-  DOM.searchInputHome.addEventListener('input', () => {
+  DOM.searchInputHome.addEventListener('input', function () {
     DOM.clearBtnHome.classList.toggle('hidden', !DOM.searchInputHome.value);
   });
-  DOM.searchInputTop.addEventListener('input', () => {
+  DOM.searchInputTop.addEventListener('input', function () {
     DOM.clearBtnTop.classList.toggle('hidden', !DOM.searchInputTop.value);
   });
+}
+
+function updateFilterButtons() {
+  var buttons = DOM.timeFilter.querySelectorAll('.filter-btn');
+  for (var i = 0; i < buttons.length; i++) {
+    if (buttons[i].getAttribute('data-period') === currentPeriod) {
+      buttons[i].classList.add('active');
+    } else {
+      buttons[i].classList.remove('active');
+    }
+  }
 }
 
 function showHome() {
@@ -96,15 +120,18 @@ function showResults() {
 }
 
 function checkUrlParams() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const q = urlParams.get('q');
-  const page = parseInt(urlParams.get('page')) || 1;
+  var urlParams = new URLSearchParams(window.location.search);
+  var q = urlParams.get('q');
+  var page = parseInt(urlParams.get('page')) || 1;
+  var period = urlParams.get('period') || 'all';
 
   if (q) {
     DOM.searchInputTop.value = q;
     DOM.clearBtnTop.classList.toggle('hidden', !q);
     currentQuery = q;
     currentPage = page;
+    currentPeriod = period;
+    updateFilterButtons();
     fetchResults(q, page);
   } else {
     showHome();
@@ -113,8 +140,11 @@ function checkUrlParams() {
 
 function performSearch(query, page) {
   if (!query.trim()) return;
-  const url = '/?q=' + encodeURIComponent(query) + '&page=' + page;
-  window.history.pushState({ query: query, page: page }, '', url);
+  var url = '/?q=' + encodeURIComponent(query) + '&page=' + page;
+  if (currentPeriod !== 'all') {
+    url += '&period=' + currentPeriod;
+  }
+  window.history.pushState({ query: query, page: page, period: currentPeriod }, '', url);
   currentQuery = query;
   currentPage = page;
   DOM.searchInputTop.value = query;
@@ -131,10 +161,14 @@ async function fetchResults(query, page) {
   DOM.pagination.innerHTML = '';
 
   try {
-    const start = performance.now();
-    const res = await fetch('/api/search?q=' + encodeURIComponent(query) + '&page=' + page + '&limit=' + LIMIT);
-    const data = await res.json();
-    const time = ((performance.now() - start) / 1000).toFixed(3);
+    var start = performance.now();
+    var apiUrl = '/api/search?q=' + encodeURIComponent(query) + '&page=' + page + '&limit=' + LIMIT;
+    if (currentPeriod !== 'all') {
+      apiUrl += '&period=' + currentPeriod;
+    }
+    var res = await fetch(apiUrl);
+    var data = await res.json();
+    var time = ((performance.now() - start) / 1000).toFixed(3);
 
     DOM.resultStats.textContent = '找到约 ' + data.total + ' 条结果 （用时 ' + time + ' 秒）';
     renderResults(data.data);
@@ -144,11 +178,22 @@ async function fetchResults(query, page) {
   }
 }
 
+function formatTime(mtime) {
+  if (!mtime) return '';
+  var d = new Date(mtime);
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  var h = String(d.getHours()).padStart(2, '0');
+  var min = String(d.getMinutes()).padStart(2, '0');
+  return y + '-' + m + '-' + day + ' ' + h + ':' + min;
+}
+
 function renderResults(items) {
   if (!items || items.length === 0) {
     DOM.resultsContainer.innerHTML =
       '<div style="margin-top:30px">' +
-      '<p>找不到和您查询的 "<b>' + escapeHtml(currentQuery) + '</b>" 相符显示的文档。</p>' +
+      '<p>找不到和您查询的 "<b>' + escapeHtml(currentQuery) + '</b>" 相符的文档。</p>' +
       '<p style="margin-top:20px">建议：</p>' +
       '<ul style="margin-top:5px; padding-left:20px; color:#3c4043; line-height: 1.6">' +
       '<li>请检查输入字词有无错误。</li>' +
@@ -164,7 +209,7 @@ function renderResults(items) {
     var item = items[i];
     var safeName = escapeHtml(item.filename).replace(/'/g, "\\'");
     html += '<div class="result-item" id="doc-' + item.id + '" onclick="openPreview(\'' + item.id + '\', \'' + safeName + '\')">';
-    html += '<div class="result-title">' + escapeHtml(item.filename) + '</div>';
+    html += '<div class="result-title">' + escapeHtml(item.filename) + '<span class="result-mtime">' + formatTime(item.mtime) + '</span></div>';
     html += '<div class="result-snippet">' + (item.snippet || '该文档未提取到明显对应的文字片段') + '</div>';
     html += '<div class="result-path">' + escapeHtml(item.absolutePath || item.filepath) + '</div>';
     html += '</div>';
@@ -204,10 +249,10 @@ function renderPagination(total, currentPage) {
 async function openPreview(id, filename) {
   // Update highlighting in list
   if (lastSelectedDocId) {
-    const oldItem = document.getElementById('doc-' + lastSelectedDocId);
+    var oldItem = document.getElementById('doc-' + lastSelectedDocId);
     if (oldItem) oldItem.classList.remove('active');
   }
-  const newItem = document.getElementById('doc-' + id);
+  var newItem = document.getElementById('doc-' + id);
   if (newItem) newItem.classList.add('active');
   lastSelectedDocId = id;
 
@@ -253,7 +298,7 @@ function highlightText(text, query) {
 function closePreview() {
   if (DOM.previewPanel) DOM.previewPanel.classList.add('hidden');
   if (lastSelectedDocId) {
-    const item = document.getElementById('doc-' + lastSelectedDocId);
+    var item = document.getElementById('doc-' + lastSelectedDocId);
     if (item) item.classList.remove('active');
   }
   lastSelectedDocId = null;

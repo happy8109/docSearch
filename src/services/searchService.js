@@ -4,7 +4,7 @@ const config = require('../../config');
 const path = require('path');
 const fs = require('fs');
 
-async function searchDocuments(query, page = 1, limit = 10) {
+async function searchDocuments(query, page = 1, limit = 10, period = 'all') {
   const db = await dbModule.getDb();
   
   const tokenizedQuery = tokenize(query);
@@ -16,15 +16,21 @@ async function searchDocuments(query, page = 1, limit = 10) {
   const matchWords = tokenizedQuery.split(' ').map(w => `"${w}"`).join(' ');
   const offset = (page - 1) * limit;
 
-  // Retrieve total count
+  // Calculate time boundary based on period filter
+  const timeFilter = getTimeFilter(period);
+  const timeCondition = timeFilter ? ' AND d.mtime >= ?' : '';
+  const timeParam = timeFilter ? [timeFilter] : [];
+
+  // Retrieve total count (with time filter)
   const countRow = await db.get(`
     SELECT COUNT(*) as count 
-    FROM documents_fts 
-    WHERE documents_fts MATCH ?
-  `, [matchWords]);
+    FROM documents_fts fts
+    JOIN documents d ON fts.doc_id = d.id
+    WHERE documents_fts MATCH ?${timeCondition}
+  `, [matchWords, ...timeParam]);
   const total = countRow ? countRow.count : 0;
 
-  // Retrieve matched documents with raw content for snippet generation
+  // Retrieve matched documents sorted by modification time (newest first)
   const rows = await db.all(`
     SELECT 
       fts.doc_id as id,
@@ -34,10 +40,10 @@ async function searchDocuments(query, page = 1, limit = 10) {
       d.raw_content
     FROM documents_fts fts
     JOIN documents d ON fts.doc_id = d.id
-    WHERE documents_fts MATCH ?
-    ORDER BY rank
+    WHERE documents_fts MATCH ?${timeCondition}
+    ORDER BY d.mtime DESC
     LIMIT ? OFFSET ?
-  `, [matchWords, limit, offset]);
+  `, [matchWords, ...timeParam, limit, offset]);
 
   // Generate clean snippets from raw_content using the original query keywords
   const keywords = query.trim().split(/\s+/).filter(k => k.length > 0);
@@ -57,6 +63,20 @@ async function searchDocuments(query, page = 1, limit = 10) {
     page,
     limit
   };
+}
+
+/**
+ * Convert period string to a Unix timestamp boundary (seconds).
+ * Returns null for 'all' (no filter).
+ */
+function getTimeFilter(period) {
+  const now = Date.now();
+  switch (period) {
+    case 'week':  return now - 7 * 24 * 3600 * 1000;
+    case 'month': return now - 30 * 24 * 3600 * 1000;
+    case 'year':  return now - 365 * 24 * 3600 * 1000;
+    default:      return null;
+  }
 }
 
 /**

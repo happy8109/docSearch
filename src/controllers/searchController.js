@@ -11,7 +11,8 @@ async function search(req, res, next) {
       return res.json({ total: 0, page, limit, data: [] });
     }
 
-    const result = await searchService.searchDocuments(q, page, limit);
+    const period = req.query.period || 'all';
+    const result = await searchService.searchDocuments(q, page, limit, period);
     res.json(result);
   } catch (error) {
     next(error);
