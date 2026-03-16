@@ -66,22 +66,22 @@ function bindEvents() {
     DOM.previewClose.addEventListener('click', closePreview);
   }
 
-  // Time filter buttons
+  // Time filter links
   DOM.timeFilter.addEventListener('click', function (e) {
-    var btn = e.target.closest('.filter-btn');
-    if (!btn) return;
-    var period = btn.getAttribute('data-period');
+    var link = e.target.closest('.filter-link');
+    if (!link) return;
+    var period = link.getAttribute('data-period');
     if (period === currentPeriod) return;
     currentPeriod = period;
     updateFilterButtons();
     performSearch(currentQuery, 1);
   });
   
-  // Sort filter buttons
+  // Sort filter links
   DOM.sortFilter.addEventListener('click', function (e) {
-    var btn = e.target.closest('.sort-btn');
-    if (!btn) return;
-    var sort = btn.getAttribute('data-sort');
+    var link = e.target.closest('.filter-link');
+    if (!link) return;
+    var sort = link.getAttribute('data-sort');
     if (sort === currentSort) return;
     currentSort = sort;
     updateFilterButtons();
@@ -110,23 +110,23 @@ function bindEvents() {
 }
 
 function updateFilterButtons() {
-  // Period buttons
-  var pButtons = DOM.timeFilter.querySelectorAll('.filter-btn');
-  for (var i = 0; i < pButtons.length; i++) {
-    if (pButtons[i].getAttribute('data-period') === currentPeriod) {
-      pButtons[i].classList.add('active');
+  // Period links
+  var pLinks = DOM.timeFilter.querySelectorAll('.filter-link');
+  for (var i = 0; i < pLinks.length; i++) {
+    if (pLinks[i].getAttribute('data-period') === currentPeriod) {
+      pLinks[i].classList.add('active');
     } else {
-      pButtons[i].classList.remove('active');
+      pLinks[i].classList.remove('active');
     }
   }
   
-  // Sort buttons
-  var sButtons = DOM.sortFilter.querySelectorAll('.sort-btn');
-  for (var j = 0; j < sButtons.length; j++) {
-    if (sButtons[j].getAttribute('data-sort') === currentSort) {
-      sButtons[j].classList.add('active');
+  // Sort links
+  var sLinks = DOM.sortFilter.querySelectorAll('.filter-link');
+  for (var j = 0; j < sLinks.length; j++) {
+    if (sLinks[j].getAttribute('data-sort') === currentSort) {
+      sLinks[j].classList.add('active');
     } else {
-      sButtons[j].classList.remove('active');
+      sLinks[j].classList.remove('active');
     }
   }
 }
