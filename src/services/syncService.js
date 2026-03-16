@@ -52,7 +52,15 @@ async function processFile(filePath) {
     }
 
     logger.debug(`[Sync] Parsing & Indexing: ${relativePath}`);
-    const rawContent = await extractText(filePath);
+    
+    let rawContent = '';
+    try {
+      rawContent = await extractText(filePath);
+    } catch (err) {
+      logger.warn(`[Sync] Failed to extract text from ${relativePath}. The file might be corrupted or in an unsupported format. Continuing with filename-only index. Error: ${err.message}`);
+      rawContent = `[文档内容提取失败，文件可能已损坏、受密码保护或格式不支持。您可以点击下方按钮下载原文件并尝试手动打开。]\n\n文件名: ${filename}`;
+    }
+
     const tokenizedContent = tokenize(rawContent);
     const tokenizedTitle = tokenize(filename);
 
