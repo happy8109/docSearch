@@ -341,10 +341,10 @@ async function loadSystemStatus() {
     var data = await res.json();
     if (res.ok) {
       var dirs = Array.isArray(data.docDirectories) ? data.docDirectories.join(', ') : (data.docDirectory || '-');
+      var lastIndexStr = data.lastIndexTime ? '最后索引时间: ' + formatTime(data.lastIndexTime) : '获取索引时间失败';
       DOM.systemFooter.innerHTML =
-        '索引文档数: ' + data.documentCount +
-        ' | 运行时间: ' + Math.floor(data.uptime / 60) + ' 分钟 | ' +
-        '<span style="cursor:help" title="热替换监控路径: ' + dirs + '">文件监听正常</span> | ' + 'Doc Search v' + (data.version || '-');
+        '索引文档数: ' + data.documentCount + ' | ' + lastIndexStr +
+        ' | 运行时间: ' + Math.floor(data.uptime / 60) + ' 分钟 | ' + 'Doc Search v' + (data.version || '-');
     }
   } catch (err) {
     console.error('Failed to load system status', err);
