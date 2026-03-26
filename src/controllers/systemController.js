@@ -20,6 +20,8 @@ async function getSystemStatus(req, res, next) {
     res.json({
       status: 'running',
       version: pkg.version,
+      isRemoteMode: config.isRemoteMode,
+      statusPollInterval: config.statusPollInterval,
       documentCount: countRow ? countRow.count : 0,
       lastIndexTime: lastIndexTime,
       docDirectories: config.docDirectories,

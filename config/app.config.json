@@ -5,6 +5,12 @@
     "../data",
     "../data2"
   ],
-  "supportedExtensions": [".doc", ".docx"],
-  "defaultPageLimit": 10
+  "supportedExtensions": [
+    ".doc",
+    ".docx"
+  ],
+  "defaultPageLimit": 10,
+  "isRemoteMode": false,
+  "remoteDbUrl": "http://localhost:3004/api/sql",
+  "statusPollInterval": 30
 }

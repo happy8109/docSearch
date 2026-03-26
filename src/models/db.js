@@ -1,56 +1,37 @@
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
-const fs = require('fs');
-const path = require('path');
-const logger = require('../utils/logger');
 const config = require('../../config');
+const LocalDriver = require('./drivers/local.driver');
+const RemoteDriver = require('./drivers/remote.driver');
+const logger = require('../utils/logger');
 
 let dbInstance = null;
 
+/**
+ * 初始化数据库适配器
+ * 根据 config.isRemoteMode 决定使用本地驱动或远程驱动
+ */
 async function init() {
   if (dbInstance) return dbInstance;
 
-  // Ensure database directory exists
-  const dbDir = path.dirname(config.dbPath);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+  try {
+    if (config.isRemoteMode) {
+      logger.info('[DB] Initializing Remote RSE Driver...');
+      dbInstance = new RemoteDriver(config);
+    } else {
+      logger.info('[DB] Initializing Local SQLite Driver...');
+      dbInstance = new LocalDriver(config);
+    }
+
+    await dbInstance.init();
+    return dbInstance;
+  } catch (error) {
+    logger.error('[DB] Failed to initialize database driver:', error);
+    throw error;
   }
-
-  const db = await open({
-    filename: config.dbPath,
-    driver: sqlite3.Database
-  });
-
-  // Enable foreign keys
-  await db.exec('PRAGMA foreign_keys = ON;');
-
-  // Create metatable for true documents (with raw un-tokenized content for modal preview)
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS documents (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      filepath TEXT UNIQUE NOT NULL,
-      filename TEXT NOT NULL,
-      mtime INTEGER NOT NULL,
-      raw_content TEXT
-    );
-  `);
-
-  // Create FTS5 virtual table for pre-tokenized search text
-  // We use simple tokenizer because we tokenize Chinese strings into space-separated phrases ourselves
-  await db.exec(`
-    CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
-      title,
-      content,
-      doc_id UNINDEXED,
-      tokenize = 'unicode61'
-    );
-  `);
-
-  logger.debug('[SQLite] Connected to database and verified schemas.');
-  dbInstance = db;
-  return dbInstance;
 }
 
+/**
+ * 获取当前数据库实例
+ */
 async function getDb() {
   if (!dbInstance) {
     return await init();
@@ -58,7 +39,6 @@ async function getDb() {
   return dbInstance;
 }
 
-// Simple export of wrapper methods can also be placed here or in models
 module.exports = {
   init,
   getDb

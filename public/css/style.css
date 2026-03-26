@@ -423,14 +423,47 @@ a {
   background: #1557b0;
 }
 
+.download-btn.disabled {
+  background: #f1f3f4 !important;
+  color: #70757a !important;
+  cursor: not-allowed !important;
+  border: 1px solid #dadce0;
+}
+
 /* --- FOOTER --- */
 .system-footer {
-  /*padding: 15px;*/
+  padding: 10px 0;
   text-align: center;
   font-size: 13px;
   color: #70757a;
   background: #f2f2f2;
   border-top: 1px solid #ebebeb;
+}
+
+.error-box {
+  margin-top: 50px;
+  padding: 24px;
+  background: #fff5f5;
+  border: 1px solid #ffcfcf;
+  border-radius: 8px;
+  max-width: 600px;
+}
+
+.error-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.error-msg {
+  color: #d93025;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.error-detail {
+  color: #5f6368;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* Responsiveness */
