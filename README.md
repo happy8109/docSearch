@@ -7,6 +7,8 @@
 
 ## 系统开发文档
 - **技术方案:** `docs/technical_framework.md` — 涵盖架构设计、数据库结构、API 规范等
+- **RSE 协议规范:** `docs/sql_bridge_spec.md` — 异构系统远程 SQL 执行协议标准
+- **RSE 重构方案:** `docs/rse_refactor_plan.md` — 按 RSE 协议进行双模式部署重构的完整方案
 - 进行架构调整或 API 修改前，请优先参阅并同步更新上述文档
 
 ## 主要功能

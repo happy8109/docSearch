@@ -76,7 +76,7 @@ function bindEvents() {
     updateFilterButtons();
     performSearch(currentQuery, 1);
   });
-  
+
   // Sort filter links
   DOM.sortFilter.addEventListener('click', function (e) {
     var link = e.target.closest('.filter-link');
@@ -119,7 +119,7 @@ function updateFilterButtons() {
       pLinks[i].classList.remove('active');
     }
   }
-  
+
   // Sort links
   var sLinks = DOM.sortFilter.querySelectorAll('.filter-link');
   for (var j = 0; j < sLinks.length; j++) {
@@ -341,10 +341,10 @@ async function loadSystemStatus() {
     var data = await res.json();
     if (res.ok) {
       var dirs = Array.isArray(data.docDirectories) ? data.docDirectories.join(', ') : (data.docDirectory || '-');
-      var lastIndexStr = data.lastIndexTime ? '最后索引时间: ' + formatTime(data.lastIndexTime) : '获取索引时间失败';
+      var lastIndexStr = data.lastIndexTime ? '索引时间: ' + formatTime(data.lastIndexTime) : '获取索引时间失败';
       DOM.systemFooter.innerHTML =
-        '索引文档数: ' + data.documentCount + ' | ' + lastIndexStr +
-        ' | 运行时间: ' + Math.floor(data.uptime / 60) + ' 分钟 | ' + 'Doc Search v' + (data.version || '-');
+        '索引文档: ' + data.documentCount + ' | ' + lastIndexStr +
+        ' | 运行时间: ' + Math.floor(data.uptime / 60) + ' 分钟 | ' + ' v' + (data.version || '-');
     }
   } catch (err) {
     console.error('Failed to load system status', err);
