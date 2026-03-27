@@ -352,7 +352,7 @@ a {
 }
 
 .preview-header {
-  padding: 15px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
@@ -404,8 +404,7 @@ a {
 }
 
 .preview-footer {
-  padding: 15px 20px;
-  border-top: 1px solid #eee;
+  padding: 5px 20px;
   text-align: right;
 }
 
@@ -413,7 +412,7 @@ a {
   display: inline-block;
   background: #1a73e8;
   color: #fff;
-  padding: 8px 16px;
+  padding: 4px 8px;
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
@@ -432,7 +431,6 @@ a {
 
 /* --- FOOTER --- */
 .system-footer {
-  padding: 10px 0;
   text-align: center;
   font-size: 13px;
   color: #70757a;

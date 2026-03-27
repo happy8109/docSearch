@@ -29,7 +29,7 @@ const DOM = {
 
 // 静态模式判定：从 URL 或之前存储的状态预判 (防止由于接口报错导致的模式误判)
 const URL_PARAMS = new URLSearchParams(window.location.search);
-window.isRemoteMode = URL_PARAMS.has('remote') || window.location.port == '3005'; 
+window.isRemoteMode = URL_PARAMS.has('remote') || window.location.port == '3005';
 
 let currentQuery = '';
 let currentPage = 1;
@@ -195,7 +195,7 @@ async function loadSystemStatus() {
   try {
     var res = await fetch('/api/system/status');
     var data = await res.json();
-    
+
     // 如果接口返回非 200 (例如 500)，视为不可用，进入 catch
     if (!res.ok) {
       throw new Error(data.error || 'Server error');
@@ -204,26 +204,26 @@ async function loadSystemStatus() {
     window.systemStatus.isAvailable = true;
     window.systemStatus.isRemoteMode = data.isRemoteMode;
     window.systemStatus.pollInterval = data.statusPollInterval || 30;
-    window.isRemoteMode = data.isRemoteMode; 
+    window.isRemoteMode = data.isRemoteMode;
 
-    var modeStr = data.isRemoteMode ? '<span style="color:#d93025; font-weight:bold;">[远程模式]</span> ' : '';
+    var modeStr = data.isRemoteMode ? '<span style="color:#1a73e8; font-weight:bold;">[远程模式]</span> ' : '';
     var lastIndexStr = data.lastIndexTime ? '索引时间: ' + formatTime(data.lastIndexTime) : '获取索引时间失败';
     DOM.systemFooter.innerHTML =
-      modeStr + '索引文档: ' + data.documentCount + ' | ' + lastIndexStr +
-      ' | 运行时间: ' + Math.floor(data.uptime / 60) + ' 分钟 | ' + ' v' + (data.version || '-');
-    
+      '索引文档: ' + data.documentCount + ' | ' + lastIndexStr +
+      ' | 运行时间: ' + Math.floor(data.uptime / 60) + ' 分钟 | ' + ' v' + (data.version || '-') + ' ' + modeStr;
+
     return true;
   } catch (err) {
     window.systemStatus.isAvailable = false;
     console.error('Failed to load system status', err);
-    
+
     // 使用全局预定义的模式标识
     var modeStr = window.isRemoteMode ? '<span style="color:#d93025; font-weight:bold;">[远程模式] ⚠️ </span>' : '<span style="color:#70757a;">[本地模式] ⚠️ </span>';
-    
-    DOM.systemFooter.innerHTML = 
+
+    DOM.systemFooter.innerHTML =
       modeStr + '<span style="color:#d93025; font-weight:bold;">服务暂时不可用 (数据请求失败)</span> | ' +
       '<span style="font-size:11px; color:#d93025;">尝试自动重连中...</span>';
-    
+
     return false;
   } finally {
     // 这种失败后，如果连续 3 次失败，临时增加轮询间隔以保护终端资源
@@ -247,13 +247,13 @@ async function startStatusPolling() {
 
 async function fetchResults(query, page) {
   // 1. 发起即时拨测，不等待轮询间隔，确保状态最新
-  var isAvailable = await loadSystemStatus(); 
-  
+  var isAvailable = await loadSystemStatus();
+
   // 2. 状态校验拦截
   if (!isAvailable) {
     DOM.resultStats.textContent = '';
     DOM.pagination.innerHTML = '';
-    DOM.resultsContainer.innerHTML = 
+    DOM.resultsContainer.innerHTML =
       '<div class="error-box">' +
       '<div class="error-icon">🔌</div>' +
       '<div class="error-msg"><b>搜索服务离线 (即时探测)</b></div>' +
@@ -265,7 +265,7 @@ async function fetchResults(query, page) {
   showResults();
   closePreview();
   document.title = query + ' - 文档搜索引擎';
-  DOM.resultsContainer.innerHTML = '<p style="color:#70757a; font-size:14px;">正在全库高速检索，请稍候...</p>';
+  DOM.resultsContainer.innerHTML = '<p style="color:#70757a; font-size:14px;">正在全库检索，请稍候...</p>';
   DOM.resultStats.textContent = '';
   DOM.pagination.innerHTML = '';
 
@@ -280,11 +280,11 @@ async function fetchResults(query, page) {
     }
     var res = await fetch(apiUrl);
     var data = await res.json();
-    
+
     if (!res.ok) {
       throw new Error(data.error || 'Server Internal Error');
     }
-    
+
     var time = ((performance.now() - start) / 1000).toFixed(3);
 
     DOM.resultStats.textContent = '找到约 ' + data.total + ' 条结果 （用时 ' + time + ' 秒）';
@@ -293,11 +293,11 @@ async function fetchResults(query, page) {
   } catch (err) {
     DOM.resultStats.textContent = '';
     DOM.pagination.innerHTML = '';
-    DOM.resultsContainer.innerHTML = 
+    DOM.resultsContainer.innerHTML =
       '<div class="error-box">' +
       '<div class="error-icon">⚠️</div>' +
       '<div class="error-msg"><b>搜索服务暂时不可用</b></div>' +
-      '<div class="error-detail">' + (window.isRemoteMode ? '提示：无法连接到远程 RSE 数据中心，请检查网络或串口桥状态。' : '提示：本地数据库查询出错。') + '<br>(' + err.message + ')</div>' +
+      '<div class="error-detail">' + (window.isRemoteMode ? '提示：无法连接到远程 RSE 数据中心，请检查网络状态。' : '提示：本地数据库查询出错。') + '<br>(' + err.message + ')</div>' +
       '</div>';
   }
 }
@@ -382,7 +382,7 @@ async function openPreview(id, filename) {
   DOM.previewPanel.classList.remove('hidden');
   DOM.previewTitle.textContent = filename;
   DOM.previewText.innerHTML = '<span style="color:#70757a">正在加载预览内容...</span>';
-  
+
   DOM.previewDownloadBtn.textContent = '下载原文件';
 
   if (window.isRemoteMode) {
